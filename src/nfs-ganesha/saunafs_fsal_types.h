@@ -1,11 +1,19 @@
-/**
- * @file   saunafs_fsal_types.h
- * @author Crash <crash@leil.io>
- *
- * @brief File System Abstraction Layer types and constants.
- *
- * This file includes declarations of data types, variables and constants
- * for SaunaFS FSAL.
+/*
+   Copyright 2023 Leil Storage OÜ
+
+   This file is part of SaunaFS.
+
+   SaunaFS is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, version 3.
+
+   SaunaFS is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with SaunaFS. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -23,9 +31,12 @@
 
 static const int kNFS4_ERROR = -1;
 
+// Global SaunaFS constants
 #ifndef SFSBLOCKSIZE
 #define SFSBLOCKSIZE 65536
 #endif
+#define SFSBLOCKSINCHUNK 1024
+#define SFSCHUNKSIZE (SFSBLOCKSIZE * SFSBLOCKSINCHUNK)
 
 #define SPECIAL_INODE_BASE 0xFFFFFFF0U
 #define SPECIAL_INODE_ROOT 0x01U
@@ -95,7 +106,7 @@ struct SaunaFSExport {
  * file descriptor and its flags associated like open and share mode.
  */
 struct SaunaFSFd {
-	fsal_openflags_t openflags; /// The open and share mode
+	struct fsal_fd fsalFd; /// The open and share mode plus fd management
 	struct sau_fileinfo *fd; /// SaunaFS file descriptor
 };
 
@@ -105,10 +116,9 @@ struct SaunaFSFd {
  * @brief Associates a single NFSv4 state structure with a file descriptor.
  */
 struct SaunaFSStateFd {
-	/// Structure representing a single NFSv4 state
-	struct state_t state;
-	/// SaunaFS file descriptor associated with the state
-	struct SaunaFSFd saunafsFd;
+	// state MUST be first to use default free_state
+	struct state_t state; /// Structure representing a single NFSv4 state
+	struct SaunaFSFd saunafsFd; /// SaunaFS file descriptor
 };
 
 struct SaunaFSHandleKey {

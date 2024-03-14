@@ -96,6 +96,7 @@ static struct config_block export_param = {
 	.dbus_interface_name = "org.ganesha.nfsd.config.fsal.saunafs",
 	.blk_desc.name = "SaunaFS",
 	.blk_desc.type = CONFIG_BLOCK,
+	.blk_desc.flags = CONFIG_UNIQUE,  /* too risky to have more */
 	.blk_desc.u.blk.init = noop_conf_init,
 	.blk_desc.u.blk.params = export_params,
 	.blk_desc.u.blk.commit = noop_conf_commit
@@ -166,7 +167,7 @@ static struct config_block fsal_export_param_block = {
  *
  * @param[in] export SaunaFS export
  */
-inline static void releaseExport(struct SaunaFSExport *export) {
+static inline void releaseExport(struct SaunaFSExport *export) {
 	if (export) {
 		if (export->fsInstance) {
 			sau_destroy(export->fsInstance);

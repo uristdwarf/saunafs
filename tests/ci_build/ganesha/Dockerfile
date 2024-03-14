@@ -20,9 +20,9 @@ HEALTHCHECK --interval=30s --timeout=3s \
 
 FROM base AS ganesha-builder
 
-ARG GANESHA_VERSION=4.3
+ARG GANESHA_VERSION=5.7
 ENV GANESHA_VERSION=${GANESHA_VERSION}
-ARG NTIRPC_VERSION=4.3
+ARG NTIRPC_VERSION=5.0
 ENV NTIRPC_VERSION=${NTIRPC_VERSION}
 
 # install ganesha from sources
@@ -85,7 +85,6 @@ RUN set -e ; \
         cmake -Bnfs-ganesha-${GANESHA_VERSION}/build \
             -DCMAKE_INSTALL_PREFIX=/ \
             -DUSE_GSS=NO \
-            -DUSE_FSAL_SAUNAFS=NO \
             -Snfs-ganesha-${GANESHA_VERSION}/src; \
         make -Cnfs-ganesha-${GANESHA_VERSION}/build -j$(($(nproc)*3/4+1)) install ; \
         rm -rf nfs-ganesha-${GANESHA_VERSION} ntirpc-${NTIRPC_VERSION} ; \
@@ -93,6 +92,8 @@ RUN set -e ; \
     mkdir -p /tmp/dependencies; \
     find /usr/ -name ganesha.nfsd -type f -exec ldd {} \; | \
         grep -oP '(/usr)?(/local)?/lib(64)?/.*\s' | sed 's/\s*$//' | sort -u | \
+        xargs -I{} cp -v --parents {} /tmp/dependencies; \
+    find /usr/ -name 'libboost_*.so*' -type f | grep -oP '(/usr)?(/local)?/lib(64)?/.*' | sort -u | \
         xargs -I{} cp -v --parents {} /tmp/dependencies;
 
 FROM base AS dbus
@@ -133,6 +134,7 @@ COPY --from=ganesha-builder /etc/ganesha /etc/ganesha
 COPY --from=ganesha-builder /usr/lib/ganesha /usr/lib/ganesha
 COPY --from=ganesha-builder /tmp/dependencies/lib /lib
 COPY --from=ganesha-builder /tmp/dependencies/lib64 /lib64
+COPY --from=ganesha-builder /tmp/dependencies/usr/lib /usr/lib
 
 RUN set -e ; \
     if ! type showmount > /dev/null 2>&1; then \

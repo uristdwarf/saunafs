@@ -211,6 +211,19 @@ static fsal_status_t get_dynamic_info(struct fsal_export *exportHandle,
 }
 
 /**
+ * @brief Free a state_t structure.
+ *
+ * @param[in] state      state_t structure to free
+ */
+void fs_free_state(struct state_t *state) {
+	struct SaunaFSFd *fd = NULL;
+	fd = &container_of(state, struct SaunaFSStateFd, state)->saunafsFd;
+
+	destroy_fsal_fd(&fd->fsalFd);
+	gsh_free(state);
+}
+
+/**
  * @brief Allocate a state_t structure.
  *
  * Note that this is not expected to fail since memory allocation is
@@ -225,34 +238,18 @@ static fsal_status_t get_dynamic_info(struct fsal_export *exportHandle,
 struct state_t *allocate_state(struct fsal_export *export,
                                enum state_type stateType,
                                struct state_t *relatedState) {
+	(void )export; // Not used
 	struct state_t *state = NULL;
 	struct SaunaFSFd *fileDescriptor = NULL;
 
 	state = init_state(gsh_calloc(1, sizeof(struct SaunaFSStateFd)),
-	                   export, stateType, relatedState);
+	                   fs_free_state, stateType, relatedState);
 
 	fileDescriptor =
 	    &container_of(state, struct SaunaFSStateFd, state)->saunafsFd;
 
-	fileDescriptor->fd = NULL;
-	fileDescriptor->openflags = FSAL_O_CLOSED;
+	init_fsal_fd(&fileDescriptor->fsalFd, FSAL_FD_STATE, op_ctx->fsal_export);
 	return state;
-}
-
-/**
- * @brief Free a state_t structure.
- *
- * @param[in] export     Export state_t is associated with
- * @param[in] state      state_t structure to free
- *
- * @returns: NULL on failure otherwise a state structure.
- */
-void free_state(struct fsal_export *export, struct state_t *state) {
-	(void) export;
-
-	struct SaunaFSStateFd *stateFd = NULL;
-	stateFd = container_of(state, struct SaunaFSStateFd, state);
-	gsh_free(stateFd);
 }
 
 /**
@@ -429,6 +426,27 @@ static attrmask_t fs_supported_attrs(struct fsal_export *export) {
 }
 
 /**
+ * @brief Function to get the fsal_obj_handle that has fsal_fd as its global fd.
+ *
+ * @param[in]     export    The export in which the handle exists
+ * @param[in]     fd        File descriptor in question
+ * @param[out]    handle    FSAL object handle
+ *
+ * @return the fsal_obj_handle.
+ */
+void get_fsal_obj_hdl(struct fsal_export *export, struct fsal_fd *fd,
+                      struct fsal_obj_handle **handle) {
+	(void )export; // Not used
+	struct SaunaFSFd *saunafsFd = NULL;
+	struct SaunaFSHandle *myself = NULL;
+
+	saunafsFd = container_of(fd, struct SaunaFSFd, fsalFd);
+	myself = container_of(saunafsFd, struct SaunaFSHandle, fd);
+
+	*handle = &myself->handle;
+}
+
+/**
  * @brief Set operations for exports
  *
  * This function overrides operations that we've implemented, leaving the rest
@@ -446,6 +464,6 @@ void exportOperationsInit(struct export_ops *ops) {
 	ops->fs_supported_attrs = fs_supported_attrs;
 	ops->fs_acl_support = fs_acl_support;
 	ops->alloc_state = allocate_state;
-	ops->free_state = free_state;
+	ops->get_fsal_obj_hdl = get_fsal_obj_hdl;
 	exportOperationsPnfs(ops);
 }

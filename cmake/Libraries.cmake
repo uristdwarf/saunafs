@@ -174,9 +174,9 @@ message(STATUS "ISAL PIC LIBRARY: ${ISAL_PIC_LIBRARY}")
 # Download nfs-ganesha
 
 if(ENABLE_NFS_GANESHA)
-  download_external(NFS_GANESHA "nfs-ganesha-4.3"
-                    "https://github.com/nfs-ganesha/nfs-ganesha/archive/V4.3.zip")
-  download_external(NTIRPC "ntirpc-4.3"
-                    "https://github.com/nfs-ganesha/ntirpc/archive/v4.3.zip")
+  download_external(NFS_GANESHA "nfs-ganesha-5.7"
+                    "https://github.com/nfs-ganesha/nfs-ganesha/archive/V5.7.zip")
+  download_external(NTIRPC "ntirpc-5.0"
+                    "https://github.com/nfs-ganesha/ntirpc/archive/v5.0.zip")
 endif()
 
