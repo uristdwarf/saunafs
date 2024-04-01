@@ -964,6 +964,7 @@ int write_data_truncate(uint32_t inode, bool opened, uint32_t uid, uint32_t gid,
 		write_data_flushwaiting_decrease(id, lock);
 		write_data_lcnt_decrease(id, lock);
 		if (status == SAUNAFS_STATUS_OK) {
+			id->maxfleng = length;
 			return 0;
 		} else {
 			// status is now SFS status, so we cannot return any errno
@@ -980,6 +981,9 @@ int write_data_truncate(uint32_t inode, bool opened, uint32_t uid, uint32_t gid,
 	});
 
 	if (endOffset > length) {
+		// Make maxfleng big enough for the upcoming writes
+		id->maxfleng = endOffset;
+
 		// Something has to be written, so pass our lock to writing threads
 		sassert(id->dataChain.empty());
 		id->locator.reset(new TruncateWriteChunkLocator(inode, length / SFSCHUNKSIZE, lockId));
@@ -1005,6 +1009,7 @@ int write_data_truncate(uint32_t inode, bool opened, uint32_t uid, uint32_t gid,
 			return err;
 		}
 	}
+	id->maxfleng = length;
 
 	// Now we can tell the master server to finish the truncate operation and then unblock the inode
 	lock.unlock();
