@@ -521,9 +521,6 @@ void InodeChunkWriter::processDataChain(ChunkWriter& writer) {
 	uint32_t maximumTime = kMaximumTime;
 	bool otherJobsAreWaiting = false;
 	while (true) {
-		writer.setChunkSizeInBlocks(
-		    std::min(inodeData_->maxfleng - chunkIndex_ * SFSCHUNKSIZE,
-		             (uint64_t)SFSCHUNKSIZE));
 		bool newOtherJobsAreWaiting = !queue_isempty(jqueue);
 		if (!otherJobsAreWaiting && newOtherJobsAreWaiting) {
 			// Some new jobs have just arrived in the queue -- we should finish faster.
@@ -574,6 +571,9 @@ void InodeChunkWriter::processDataChain(ChunkWriter& writer) {
 			can_expect_next_block = haveAnyBlockInCurrentChunk(lock);
 		}
 
+		writer.setChunkSizeInBlocks(
+		    std::min(inodeData_->maxfleng - chunkIndex_ * SFSCHUNKSIZE,
+		             (uint64_t)SFSCHUNKSIZE));
 		if (writer.startNewOperations(can_expect_next_block) > 0) {
 			Glock lock(gMutex);
 			inodeData_->lastWriteToChunkservers.reset();
