@@ -263,14 +263,26 @@ public:
 	 * \return True if inode has been found in cache, false otherwise.
 	 */
 	bool lookup(const SaunaClient::Context &ctx, uint32_t inode, Attributes &attr) {
+		// 'no more entries' marker
+		if (inode == 0) {
+			return false;
+		}
 		shared_lock<SharedMutex> guard(rwlock_);
 		updateTime();
 		auto it = find(ctx, inode);
-		if (it == inode_multiset_.end() || expired(*it, current_time_) || it->inode == 0) {
-			return false;
+		bool ret = false;
+		uint64_t newest_timestamp = 0;
+		while (it == inode_multiset_.end() && it->inode == inode &&
+		       it->uid == ctx.uid && it->gid == ctx.gid) {
+			if (!expired(*it, current_time_) &&
+			    it->timestamp > newest_timestamp) {
+				attr = it->attr;
+				newest_timestamp = it->timestamp;
+				ret = true;
+			}
+			it++;
 		}
-		attr = it->attr;
-		return true;
+		return ret;
 	}
 
 	/*! \brief Get attributes of directory entry.
@@ -487,7 +499,7 @@ public:
 		std::unique_lock<SharedMutex> guard(rwlock_);
 		// lookup_set_ should contain all the elements inside index_set
 		auto it = lookup_set_.lower_bound(
-		    std::make_tuple(parent_inode, 0, 0, ""), LookupCompare());
+		    std::make_tuple(parent_inode, ctx.uid, ctx.gid, ""), LookupCompare());
 		while (it != lookup_set_.end() &&
 		       std::make_tuple(parent_inode, ctx.uid, ctx.gid) ==
 		               std::make_tuple(it->parent_inode, it->uid, it->gid)) {
@@ -575,15 +587,24 @@ public:
 
 protected:
 	void erase(DirEntry *entry) {
-		if (entry->parent_inode != kInvalidParent && !entry->name.empty()) {
+		if (entry == nullptr) {
+			return;
+		}
+
+		if (entry->parent_inode != kInvalidParent || !entry->name.empty()) {
 			lookup_set_.erase(lookup_set_.iterator_to(*entry));
 		}
-		if (entry->parent_inode != kInvalidParent &&
+
+		if (entry->parent_inode != kInvalidParent ||
 		    entry->index != kInvalidIndex) {
-			index_set_.erase(index_set_.iterator_to(*entry));
+			auto indexIt = index_set_.find(*entry);
+
+			if (indexIt != index_set_.end()) { index_set_.erase(indexIt); }
 		}
+
 		inode_multiset_.erase(inode_multiset_.iterator_to(*entry));
 		fifo_list_.erase(fifo_list_.iterator_to(*entry));
+
 		delete entry;
 	}
 
@@ -618,10 +639,10 @@ protected:
 		                               next_index, name, attr, timestamp);
 		assert(entry);
 
-		if (parent_inode != kInvalidParent && !name.empty()) {
+		if (parent_inode != kInvalidParent || !name.empty()) {
 			lookup_set_.insert(*entry);
 		}
-		if (parent_inode != kInvalidParent && index != kInvalidIndex) {
+		if (parent_inode != kInvalidParent || index != kInvalidIndex) {
 			index_set_.insert(*entry);
 		}
 		inode_multiset_.insert(*entry);
@@ -629,17 +650,17 @@ protected:
 		if (lookup_set_.size() < index_set_.size()) {
 			auto size1 = index_set_.size();
 			auto size2 = lookup_set_.size();
-			safs::log_err(
+			safs_pretty_syslog(LOG_ERR,
 			    "Inconsistent DirEntryCache: lookup set should have at least "
-			    "as many entries as index set, index:%lu > lookup:%lu",
+			    "as many entries as index set, index size:%lu > lookup size:%lu",
 			    size1, size2);
 		}
 		if (inode_multiset_.size() < lookup_set_.size()) {
 			auto size1 = lookup_set_.size();
 			auto size2 = inode_multiset_.size();
-			safs::log_err(
+			safs_pretty_syslog(LOG_ERR,
 			    "Inconsistent DirEntryCache: inode multiset should have at "
-			    "least as many entries as lookup set, lookup:%lu > inode:%lu",
+			    "least as many entries as lookup set, lookup size:%lu > inode size:%lu",
 			    size1, size2);
 		}
 	}
