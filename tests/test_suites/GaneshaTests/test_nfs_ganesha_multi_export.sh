@@ -50,6 +50,7 @@ EXPORT
 		Name = SaunaFS;
 		hostname = localhost;
 		port = ${saunafs_info_[matocl]};
+		direntry_cache_timeout_ms = 0;
 	}
 	Protocols = 3, 4;
 }
@@ -64,6 +65,7 @@ EXPORT
 		Name = SaunaFS;
 		hostname = localhost;
 		port = ${saunafs_info_[matocl]};
+		direntry_cache_timeout_ms = 0;
 	}
 	Protocols = 3, 4;
 }

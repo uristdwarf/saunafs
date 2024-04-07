@@ -31,6 +31,8 @@
 
 using namespace saunafs;
 
+constexpr unsigned kMillisecondsInOneSecond = 1000U;
+
 void sau_set_default_init_params(struct sau_init_params *params,
                                  const char *host, const char *port,
                                  const char *mountpoint) {
@@ -67,6 +69,8 @@ void sau_set_default_init_params(struct sau_init_params *params,
 	params->debug_mode = SaunaClient::FsInitParams::kDefaultDebugMode;
 	params->keep_cache = SaunaClient::FsInitParams::kDefaultKeepCache;
 	params->direntry_cache_timeout = SaunaClient::FsInitParams::kDefaultDirentryCacheTimeout;
+	params->direntry_cache_timeout_ms =
+	    params->direntry_cache_timeout * kMillisecondsInOneSecond;
 	params->direntry_cache_size = SaunaClient::FsInitParams::kDefaultDirentryCacheSize;
 	params->entry_cache_timeout = SaunaClient::FsInitParams::kDefaultEntryCacheTimeout;
 	params->attr_cache_timeout = SaunaClient::FsInitParams::kDefaultAttrCacheTimeout;

@@ -125,6 +125,8 @@ static struct config_item fsal_export_params[] = {
                    parameters.total_read_timeout_ms),
     CONF_ITEM_UI32("cache_expiration_time_ms", 0, 65536, 1000, SaunaFSExport,
                    parameters.cache_expiration_time_ms),
+    CONF_ITEM_UI32("direntry_cache_timeout_ms", 0, 65536, 250, SaunaFSExport,
+                   parameters.direntry_cache_timeout_ms),
     CONF_ITEM_UI32("readahead_max_window_size_kB", 0, 65536, 16384,
                    SaunaFSExport, parameters.readahead_max_window_size_kB),
     CONF_ITEM_UI32("write_cache_size", 0, 1024, 64, SaunaFSExport,
@@ -228,6 +230,14 @@ static fsal_status_t createExport(struct fsal_module *module, void *parseNode,
 	}
 
 	export->parameters.subfolder = gsh_strdup(CTX_FULLPATH(op_ctx));
+
+	/* In this way, direntry_cache_timeout can be defined as
+	 * a custom value of the export at the ganesha.conf file */
+	double direntryCacheTimeout = export->parameters.direntry_cache_timeout_ms;
+	double kMillisecondsInOneSecond = 1000.0F;
+	double value = direntryCacheTimeout / kMillisecondsInOneSecond;
+	export->parameters.direntry_cache_timeout = value;
+
 	export->fsInstance = sau_init_with_params(&export->parameters);
 
 	if (export->fsInstance == NULL) {

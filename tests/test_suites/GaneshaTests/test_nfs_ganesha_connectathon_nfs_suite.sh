@@ -57,6 +57,7 @@ EXPORT
 		# How often to retry to connect
 		io_retries = 5;
 		cache_expiration_time_ms = 2500;
+		direntry_cache_timeout_ms = 0;
 	}
 	Protocols = 4;
 	CLIENT {

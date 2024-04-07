@@ -68,7 +68,15 @@ typedef struct sau_init_params {
 
 	bool debug_mode;
 	int keep_cache;
+
+	/* direntry_cache_timeout value used in SaunaFS */
 	double direntry_cache_timeout;
+
+	/* Value defined in SaunaFS exports in ganesha.conf file (if needed)
+	 * because Ganesha does not allow float values.
+	 * This value updates direntry_cache_timeout dividing by 1000. */
+	unsigned direntry_cache_timeout_ms;
+
 	unsigned direntry_cache_size;
 	double entry_cache_timeout;
 	double attr_cache_timeout;
