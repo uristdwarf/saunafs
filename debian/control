@@ -27,7 +27,8 @@ Description: Debugging symbols for SaunaFS
 Package: saunafs-common
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
-         adduser
+         adduser,
+         libboost-container-dev
 Conflicts: sfs-common
 Replaces: sfs-common
 Provides: sfs-common

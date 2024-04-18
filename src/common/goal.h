@@ -308,7 +308,7 @@ public:
 	typedef SliceIterator<ConstPartProxy, const DataContainer, const SizeContainer> const_iterator;
 
 	/// Constructor based on type
-	explicit Slice(Type type) noexcept : type_(type), part_size_(type.expectedParts(), 0), data_() {
+	explicit Slice(Type type) noexcept : type_(type), part_size_(type.expectedParts(),0), data_() {
 	}
 
 	Slice(const Slice &other)
